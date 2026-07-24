@@ -23,9 +23,6 @@ pipeline:
             override: true
           buildIntelligence:
             enabled: true
-          platform:
-            os: Linux
-            arch: Amd64
           runtime:
             type: Docker
             spec: {}
