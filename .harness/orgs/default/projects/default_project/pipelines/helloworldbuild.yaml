@@ -1,0 +1,46 @@
+pipeline:
+  name: hello-world-build
+  identifier: helloworldbuild
+  projectIdentifier: default_project
+  orgIdentifier: default
+  tags: {}
+  properties:
+    ci:
+      codebase:
+        connectorRef: git_connector
+        repoName: hello-world
+        build: <+input>
+  stages:
+    - stage:
+        name: hello-world-build
+        identifier: helloworldbuild
+        description: ""
+        type: CI
+        spec:
+          cloneCodebase: true
+          caching:
+            enabled: true
+            override: true
+          buildIntelligence:
+            enabled: true
+          infrastructure:
+            type: KubernetesDirect
+            spec:
+              connectorRef: kubernetes
+              namespace: harness-delegate-ng
+              automountServiceAccountToken: true
+              nodeSelector: {}
+              os: Linux
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Run_1
+                  identifier: Run_1
+                  spec:
+                    connectorRef: Harness
+                    image: node:18-alpine
+                    shell: Sh
+                    command: |-
+                      npm install
+                      npm start
