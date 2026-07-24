@@ -1,0 +1,52 @@
+pipeline:
+  name: Hello-worls Ci
+  identifier: Helloworls_Ci
+  projectIdentifier: default_project
+  orgIdentifier: default
+  tags: {}
+  properties:
+    ci:
+      codebase:
+        connectorRef: git_connector
+        repoName: hello-world
+        build: <+input>
+  stages:
+    - stage:
+        name: Helloworld build
+        identifier: Helloworld_build
+        description: ""
+        type: CI
+        spec:
+          cloneCodebase: true
+          caching:
+            enabled: true
+            override: true
+          buildIntelligence:
+            enabled: true
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Docker
+            spec:
+              harnessImageConnectorRef: Harness
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Run_1
+                  identifier: Run_1
+                  spec:
+                    shell: Sh
+                    command: |-
+                      npm install
+                      npm start
+              - step:
+                  type: BuildAndPushDockerRegistry
+                  name: BuildAndPushDockerRegistry_1
+                  identifier: BuildAndPushDockerRegistry_1
+                  spec:
+                    connectorRef: Harness
+                    repo: itsmeteja9/hello-world
+                    tags:
+                      - <+pipeline.sequence>
