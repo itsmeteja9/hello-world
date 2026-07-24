@@ -1,0 +1,14 @@
+inputSet:
+  name: Build_itsmeteja9_hello_world_1784923708151-pr-trigger-input-set
+  identifier: Build_itsmeteja9_hello_world_1784923708151prtriggerinputset
+  orgIdentifier: default
+  projectIdentifier: POCHarness
+  pipeline:
+    identifier: Build_itsmeteja9_hello_world_1784923708151
+    properties:
+      ci:
+        codebase:
+          build:
+            type: PR
+            spec:
+              number: <+trigger.prNumber>
