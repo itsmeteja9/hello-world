@@ -32,7 +32,7 @@ pipeline:
                   spec:
                     caching: true
                     connectorRef: <+input>
-                    repo: hello/world
+                    repo: itsmeteja9/hello-world
                     tags:
                       - latest
                   timeout: ""
