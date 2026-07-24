@@ -31,7 +31,7 @@ pipeline:
                   name: docker_build
                   spec:
                     caching: true
-                    connectorRef: <+input>
+                    connectorRef: dockerhub
                     repo: itsmeteja9/hello-world
                     tags:
                       - latest
