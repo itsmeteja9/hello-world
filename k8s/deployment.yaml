@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: hello-world
-          image: itsmeteja9/hello-world:latest
+          image: itsmeteja9/hello-world:build1
           imagePullPolicy: Always
           ports:
             - containerPort: 5000
