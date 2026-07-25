@@ -1,0 +1,5 @@
+service:
+  name: hello
+  identifier: hello
+  orgIdentifier: default
+  projectIdentifier: POCHarness
