@@ -4,6 +4,7 @@ service:
   orgIdentifier: default
   projectIdentifier: POCHarness
   serviceDefinition:
+    type: Kubernetes
     spec:
       manifests:
         - manifest:
@@ -15,10 +16,10 @@ service:
                 spec:
                   connectorRef: github
                   gitFetchType: Branch
-                  paths:
-                    - https://github.com/itsmeteja9/hello-world/blob/main/manifest.yaml
                   repoName: hello-world
                   branch: main
+                  paths:
+                    - k8s/deployment.yaml
+                    - k8s/service.yaml
               skipResourceVersioning: false
               enableDeclarativeRollback: false
-    type: Kubernetes
