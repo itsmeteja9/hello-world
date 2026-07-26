@@ -81,7 +81,7 @@ pipeline:
                       spec:
                         script: |-
                           echo "App deployed"
-                          echo "open :http://localhost:3000/""
+                          echo "open :http://localhost:3000/"
                     environmentVariables: []
                     outputVariables: []
                   timeout: 10m
