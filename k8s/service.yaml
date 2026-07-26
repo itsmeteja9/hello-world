@@ -4,11 +4,11 @@ metadata:
   name: hello-world
   namespace: harness-delegate-ng
 spec:
+  type: NodePort
   selector:
-    app: hello-world   # ← THIS MUST MATCH YOUR DEPLOYMENT
+    app: hello-world
   ports:
     - port: 3000
       targetPort: 3000
       nodePort: 30036
       protocol: TCP
-
