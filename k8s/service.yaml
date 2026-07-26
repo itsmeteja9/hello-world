@@ -2,8 +2,6 @@ apiVersion: v1
 kind: Service
 metadata:
   name: hello-world
-  labels:
-    app: hello-world
 spec:
   type: NodePort
   selector:
