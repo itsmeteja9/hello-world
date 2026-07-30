@@ -7,18 +7,27 @@ Terraform for the Cloud Run deployment.
 
 The application itself is a presentation-ready **CI/CD Enterprise Blueprint**.
 Opening the Cloud Run URL displays an interactive walkthrough of the same
-pipeline that deployed it: GitHub commit → Terraform → Docker → Artifact
-Registry → Cloud Run.
+pipeline that deployed it: source change → test and security gates → Terraform
+→ container build and scan → Artifact Registry → Cloud Run → live verification.
 
-## Deployment flow
+## Pipeline shown in GitHub Actions
 
-1. Authenticate from GitHub to Google Cloud with Workload Identity Federation.
-2. Initialize Terraform with a persistent GCS backend.
-3. Enable the Artifact Registry and Cloud Run APIs.
-4. Create the GAR repository with Terraform.
-5. Build the application image and push it to GAR.
-6. Create or update Cloud Run with Terraform.
-7. Call `/healthz` and publish the service URL in the workflow summary.
+The workflow is split into separately visible jobs so teams can see where a
+change is stopped and what must pass before deployment:
+
+1. Run application tests with native Node.js coverage.
+2. Run Semgrep Community Edition SAST.
+3. Scan dependencies and secrets with Trivy; review Terraform and Dockerfile
+   findings.
+4. Check Terraform formatting and validate the configuration.
+5. Provision the Artifact Registry repository after all quality gates pass.
+6. Build the commit-tagged container, scan it with Trivy, and push it to GAR.
+7. Deploy the exact approved image to Cloud Run.
+8. Test `/healthz` and the application page, then publish the URL.
+
+The first four jobs run on pull requests without using Google Cloud
+credentials. Provisioning and deployment run only on `main` or by manual
+dispatch.
 
 The two Terraform applies are intentional. On the first run, GAR must exist
 before Docker can push the image, and the image must exist before Cloud Run can
@@ -41,7 +50,11 @@ deploy it.
 │   ├── index.html
 │   ├── styles.css
 │   └── client.js
+├── test/
+│   └── app.test.js
 ├── app.js
+├── server.js
+├── requirements-security.txt
 ├── Dockerfile
 ├── package.json
 └── package-lock.json
@@ -52,9 +65,10 @@ is not used by the Cloud Run workflow.
 
 ## One-time Google Cloud prerequisites
 
-Use an existing Workload Identity Federation provider and deployment service
-account, or ask a Google Cloud administrator to create them for this GitHub
-repository.
+For this short-lived POC, the workflow uses a dedicated deployment service
+account JSON key stored as a masked GitHub Actions secret. Use Workload Identity
+Federation instead of a long-lived key when moving this workflow beyond the
+POC.
 
 The deployment service account needs:
 
@@ -63,9 +77,6 @@ The deployment service account needs:
 - `roles/run.admin` on the project
 - `roles/iam.serviceAccountUser` on the Cloud Run runtime service account
 - `roles/storage.objectAdmin` on the Terraform state bucket
-
-The GitHub repository principal also needs
-`roles/iam.workloadIdentityUser` on the deployment service account.
 
 Create the Terraform state bucket once before the first workflow run. Bucket
 names are globally unique:
@@ -87,8 +98,7 @@ In **Settings → Secrets and variables → Actions**, add:
 
 | Type | Name | Example |
 | --- | --- | --- |
-| Secret | `GCP_WORKLOAD_IDENTITY_PROVIDER` | `projects/123456789/locations/global/workloadIdentityPools/github/providers/my-repo` |
-| Secret | `GCP_SERVICE_ACCOUNT` | `github-deployer@my-project.iam.gserviceaccount.com` |
+| Secret | `GCP_SA_KEY` | Complete single-line service account JSON |
 | Variable | `GCP_PROJECT_ID` | `my-project` |
 | Variable | `TF_STATE_BUCKET` | `my-project-terraform-state-1234` |
 | Variable | `GCP_REGION` | `us-central1` |
@@ -97,8 +107,10 @@ In **Settings → Secrets and variables → Actions**, add:
 | Variable | `DEPLOY_ENVIRONMENT` | `demo` |
 | Variable | `ALLOW_UNAUTHENTICATED` | `true` |
 
-Only `GCP_PROJECT_ID`, `TF_STATE_BUCKET`, and the two secrets are required.
+Only `GCP_SA_KEY`, `GCP_PROJECT_ID`, and `TF_STATE_BUCKET` are required.
 The workflow supplies defaults for the other values.
+
+Never commit the service account key file. Revoke the key when the POC ends.
 
 If your organization blocks public Cloud Run services, set
 `ALLOW_UNAUTHENTICATED` to `false` and replace the public health check with an
@@ -106,8 +118,26 @@ authenticated request.
 
 ## Run the demo
 
-Push to `main`, or open **Actions → Provision GAR and deploy Cloud Run → Run
-workflow**. The successful run summary contains the image URI and Cloud Run URL.
+Open a pull request to show only the test, SAST, repository security, and
+Terraform validation gates. Merge to `main`, or open **Actions → CI/CD - Test,
+secure and deploy to Cloud Run → Run workflow**, to run the full delivery flow.
+The successful run summary contains the image URI and Cloud Run URL.
+
+The deploy job uses the GitHub environment named `demo`. You can add required
+reviewers to that environment to demonstrate a human approval before Cloud Run
+deployment. Leave it without reviewers for an uninterrupted POC.
+
+## Security behavior
+
+- Semgrep findings block the pipeline.
+- High or critical dependency, repository-secret, and container findings block
+  the pipeline.
+- Terraform and Dockerfile misconfiguration findings are report-only for this
+  POC because the demo intentionally allows unauthenticated Cloud Run access.
+  For production, make the service private, set this scan to `exit-code: "1"`,
+  and document any narrowly scoped exceptions.
+- Third-party actions are pinned to immutable commit SHAs. The comments beside
+  each SHA show the reviewed release version.
 
 Open that Cloud Run URL to present the interactive pipeline page. Select a stage
 to explain it, switch between guided and technical views, or choose **Run

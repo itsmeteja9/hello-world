@@ -3,8 +3,8 @@ region        = "us-central1"
 repository_id = "hello-world-images"
 service_name  = "hello-world"
 
-# GitHub Actions calculates and supplies the real commit-tagged URI.
-image = "us-central1-docker.pkg.dev/your-gcp-project-id/hello-world-images/hello-world:commit-sha"
+# Do not set image here. GitHub Actions supplies the full Artifact Registry URI
+# with the current GITHUB_SHA at plan time.
 
 environment           = "demo"
 allow_unauthenticated = true

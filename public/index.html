@@ -29,6 +29,9 @@
       <symbol id="icon-cloud" viewBox="0 0 48 48">
         <path d="M15 37h20a9 9 0 0 0 1-18 13 13 0 0 0-24-3A10.5 10.5 0 0 0 15 37Zm13-7 5 5 5-5m-5 5V24"/>
       </symbol>
+      <symbol id="icon-shield" viewBox="0 0 48 48">
+        <path d="M24 4 40 10v12c0 10-6.5 18-16 22C14.5 40 8 32 8 22V10l16-6Zm-8 20 5 5 11-12"/>
+      </symbol>
     </svg>
 
     <main>
@@ -51,8 +54,8 @@
           <p class="kicker">GITHUB ACTIONS × GOOGLE CLOUD</p>
           <h1>From commit to Cloud Run — clearly.</h1>
           <p class="hero-description">
-            See how one push provisions infrastructure, builds the container,
-            publishes it to Artifact Registry, and deploys this application to Cloud Run.
+            See how each change is tested and security-scanned before Terraform,
+            Artifact Registry, and Cloud Run deliver the approved application.
           </p>
           <div class="hero-actions">
             <button class="button button-primary" id="run-pipeline" type="button">
@@ -82,8 +85,8 @@
         <span class="summary-number" id="summary-number">01</span>
         <div>
           <p id="summary-eyebrow">SOURCE EVENT</p>
-          <h2 id="summary-name">GitHub Commit</h2>
-          <span id="summary-text">A push to main starts the GitHub Actions workflow.</span>
+          <h2 id="summary-name">Source Change</h2>
+          <span id="summary-text">A pull request checks the change; a merge to main starts delivery.</span>
         </div>
       </section>
 
@@ -91,22 +94,22 @@
         <article>
           <span class="metric-icon" aria-hidden="true">⌘</span>
           <div>
-            <strong>5 stages</strong>
-            <small>one automated flow</small>
+            <strong>8 visible jobs</strong>
+            <small>clear ownership and status</small>
           </div>
         </article>
         <article>
           <span class="metric-icon" aria-hidden="true">◷</span>
           <div>
-            <strong>~4m 28s</strong>
-            <small>typical demo runtime</small>
+            <strong>4 parallel gates</strong>
+            <small>fast feedback before build</small>
           </div>
         </article>
         <article>
           <span class="metric-icon check-icon" aria-hidden="true">✓</span>
           <div>
-            <strong>zero manual steps</strong>
-            <small>after code approval</small>
+            <strong>1 deployment gate</strong>
+            <small>optional human approval</small>
           </div>
         </article>
       </section>
@@ -115,7 +118,7 @@
         <div class="section-heading">
           <div>
             <p class="kicker">THE HANDOFFS, EXPLAINED</p>
-            <h2>One pipeline. Five clear responsibilities.</h2>
+            <h2>One pipeline. Six clear stages.</h2>
             <p>
               Use the guided explanation for stakeholders or switch to the
               delivery detail engineers expect.
@@ -138,9 +141,9 @@
           <div>
             <strong>Why this order matters</strong>
             <p>
-              Artifact Registry must exist before the workflow can push an image.
-              Cloud Run is applied only after that exact image exists, so the
-              first deployment works cleanly.
+              Tests and security checks must pass before GCP credentials are used.
+              Artifact Registry is created before the push, and Cloud Run receives
+              only the exact commit-tagged image that passed scanning.
             </p>
           </div>
         </aside>
@@ -210,7 +213,7 @@
       <footer>
         <div>
           <span class="brand-badge">EEP Demo</span>
-          <p>GitHub Actions → Terraform → Docker → GAR → Cloud Run</p>
+          <p>Tests + Security → Terraform → Build + Scan → GAR → Cloud Run → Verify</p>
         </div>
         <p>Interactive architecture walkthrough served from Cloud Run.</p>
       </footer>
