@@ -5,6 +5,11 @@ service with Terraform. GitHub Actions builds the Node.js container, pushes an
 immutable commit-tagged image to GAR, and gives that exact image URI back to
 Terraform for the Cloud Run deployment.
 
+The application itself is a presentation-ready **CI/CD Enterprise Blueprint**.
+Opening the Cloud Run URL displays an interactive walkthrough of the same
+pipeline that deployed it: GitHub commit → Terraform → Docker → Artifact
+Registry → Cloud Run.
+
 ## Deployment flow
 
 1. Authenticate from GitHub to Google Cloud with Workload Identity Federation.
@@ -32,6 +37,10 @@ deploy it.
 │   ├── versions.tf
 │   └── terraform.tfvars.example
 ├── k8s/manifest.yaml
+├── public/
+│   ├── index.html
+│   ├── styles.css
+│   └── client.js
 ├── app.js
 ├── Dockerfile
 ├── package.json
@@ -100,9 +109,15 @@ authenticated request.
 Push to `main`, or open **Actions → Provision GAR and deploy Cloud Run → Run
 workflow**. The successful run summary contains the image URI and Cloud Run URL.
 
+Open that Cloud Run URL to present the interactive pipeline page. Select a stage
+to explain it, switch between guided and technical views, or choose **Run
+pipeline demo** to animate the complete delivery path. The service card displays
+the real Cloud Run URL currently open in the browser.
+
 ## Application change made for Cloud Run
 
-The original app listened only on port `3000`. Cloud Run injects a `PORT`
-environment variable, so `app.js` now listens on `process.env.PORT` with a
-default of `8080`. The Dockerfile and optional Kubernetes manifest use the same
-port.
+Cloud Run injects a `PORT` environment variable, so `app.js` listens on
+`process.env.PORT` with a default of `8080`. Express serves the static
+presentation assets in `public/`, while `/healthz` remains available for the
+deployment smoke test. The Dockerfile and optional Kubernetes manifest use the
+same port.

@@ -1,0 +1,15 @@
+project_id    = "your-gcp-project-id"
+region        = "us-central1"
+repository_id = "hello-world-images"
+service_name  = "hello-world"
+
+# GitHub Actions calculates and supplies the real commit-tagged URI.
+image = "us-central1-docker.pkg.dev/your-gcp-project-id/hello-world-images/hello-world:commit-sha"
+
+environment           = "demo"
+allow_unauthenticated = true
+
+labels = {
+  cost_center = "demo"
+  owner       = "platform-team"
+}
