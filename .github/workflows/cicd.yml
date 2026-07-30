@@ -69,7 +69,8 @@ jobs:
           IMAGE_URI="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GAR_REPOSITORY}/${CLOUD_RUN_SERVICE}:${GITHUB_SHA}"
           echo "IMAGE_URI=${IMAGE_URI}" >> "${GITHUB_ENV}"
           echo "TF_VAR_image=${IMAGE_URI}" >> "${GITHUB_ENV}"
-
+          echo "Deploying commit: ${GITHUB_SHA}"
+          echo "Image: ${IMAGE_URI}"
       - name: Check Terraform formatting
         run: terraform -chdir=terraform fmt -check -recursive
 
@@ -104,7 +105,7 @@ jobs:
         run: docker push "${IMAGE_URI}"
 
       - name: Plan Cloud Run deployment
-        run: terraform -chdir=terraform plan -input=false -out=tfplan
+        run: terraform -chdir=terraform plan -var="image=${IMAGE_URI}" -input=false -out=tfplan
 
       - name: Create or update Cloud Run
         run: terraform -chdir=terraform apply -input=false tfplan
