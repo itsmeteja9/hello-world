@@ -1,19 +1,26 @@
-FROM node:24.18.1-alpine3.24
+# Install production dependencies
+FROM node:24.18.1-trixie-slim AS dependencies
 
 ENV NODE_ENV=production
 WORKDIR /app
-
-# npm 11.19.0 contains patched undici 6.27.0
-RUN npm install --global npm@11.19.0
 
 COPY package*.json ./
 RUN npm ci --omit=dev \
     && npm cache clean --force
 
-COPY --chown=node:node app.js server.js ./
-COPY --chown=node:node public ./public
+# Final runtime does not contain npm
+FROM gcr.io/distroless/nodejs24-debian13:nonroot
 
-USER node
+ENV NODE_ENV=production
+WORKDIR /app
+
+COPY --from=dependencies --chown=nonroot:nonroot \
+    /app/node_modules ./node_modules
+
+COPY --chown=nonroot:nonroot app.js server.js ./
+COPY --chown=nonroot:nonroot public ./public
+
 EXPOSE 8080
 
-CMD ["node", "server.js"]
+# Distroless already uses Node.js as its entrypoint
+CMD ["server.js"]
