@@ -120,7 +120,7 @@ pipeline {
         }
 
         stage('Terraform Init/Plan/Apply') {
-                agent { label 'linux' }   // IMPORTANT: run on a Linux agent
+                agent any  
                 steps {
                 withCredentials([file(credentialsId: 'gcp-sa-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
                 sh """
