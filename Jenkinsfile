@@ -102,7 +102,7 @@ pipeline {
 
         stage('Authenticate to GCP') {
             steps {
-                withCredentials([file(credentialsId: 'gcp-sa', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+                withCredentials([file(credentialsId: 'gcp-sa-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
                     bat """
                         gcloud auth activate-service-account --key-file=%GOOGLE_APPLICATION_CREDENTIALS%
                         gcloud config set project ${PROJECT_ID}
