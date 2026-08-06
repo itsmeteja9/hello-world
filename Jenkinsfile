@@ -80,7 +80,7 @@ pipeline {
                 withSonarQubeEnv('SonarCloud') {
                     bat """
                         sonar-scanner ^
-                          -Dsonar.projectKey=devops-poc ^
+                          -Dsonar.projectKey=harnesspoc_devops-poc ^
                           -Dsonar.organization=harnesspoc ^
                           -Dsonar.sources=. ^
                           -Dsonar.host.url=https://sonarcloud.io ^
