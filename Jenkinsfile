@@ -121,7 +121,7 @@ pipeline {
 
         stage('Terraform Init/Plan/Apply') {
             steps {
-                withCredentials([file(credentialsId: 'gcp-sa', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) { 
+                withCredentials([file(credentialsId: 'gcp-sa-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) { 
                 bat """
                    set GOOGLE_APPLICATION_CREDENTIALS=%GOOGLE_APPLICATION_CREDENTIALS%
                    cd terraform
