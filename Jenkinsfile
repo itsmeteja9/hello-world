@@ -123,7 +123,7 @@ pipeline {
             steps {
                 bat """
                    cd terraform
-                   terraform init
+                   terraform init -backend-config="bucket=devops-poc-demo-tfstate" -backend-config="prefix=state"
                    terraform plan
                    terraform apply -auto-approve
                 """
