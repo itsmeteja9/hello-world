@@ -124,8 +124,9 @@ pipeline {
                     bat """
                         set GOOGLE_APPLICATION_CREDENTIALS=%GOOGLE_APPLICATION_CREDENTIALS%
                         cd terraform
-                        terraform init -migrate-state -backend-config="bucket=devops-poc-demo-tfstate" -backend-config="prefix=devops-poc-demo/hello-world"
+                        terraform init -reconfigure -backend-config="bucket=devops-poc-demo-tfstate" -backend-config="prefix=devops-poc-demo/hello-world"
                         terraform import google_artifact_registry_repository.app projects/devops-poc-demo/locations/us-central1/repositories/hello-world-images || true
+                        terraform import google_cloud_run_v2_service.app projects/devops-poc-demo/locations/us-central1/services/hello-world || true
                         terraform plan
                         terraform apply -auto-approve
                     """
