@@ -123,12 +123,13 @@ pipeline {
                 withCredentials([file(credentialsId: 'gcp-sa-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
                     bat """
                         set GOOGLE_APPLICATION_CREDENTIALS=%GOOGLE_APPLICATION_CREDENTIALS%
+                        set TF_VAR_image=%FULL_IMAGE_PATH%
                         cd terraform
                         terraform init -reconfigure -backend-config="bucket=devops-poc-demo-tfstate" -backend-config="prefix=devops-poc-demo/hello-world"
                         terraform import google_artifact_registry_repository.app projects/devops-poc-demo/locations/us-central1/repositories/hello-world-images || true
                         terraform import google_cloud_run_v2_service.app projects/devops-poc-demo/locations/us-central1/services/hello-world || true
-                        terraform plan
-                        terraform apply -auto-approve
+                        terraform plan -var="image=%TF_VAR_image%"
+                        terraform apply -auto-approve -var="image=%TF_VAR_image%"
                     """
                 }
             }
