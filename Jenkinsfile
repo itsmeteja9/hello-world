@@ -114,7 +114,7 @@ pipeline {
         stage('Build Image using Cloud Build') {
             steps {
                 bat """
-                    gcloud builds submit --tag ${FULL_IMAGE_PATH}
+                    gcloud builds submit --tag ${FULL_IMAGE_PATH} --project=${PROJECT_ID}
                 """
             }
         }
