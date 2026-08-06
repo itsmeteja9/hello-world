@@ -121,20 +121,21 @@ pipeline {
 
         stage('Terraform Init/Plan/Apply') {
             steps {
+                withCredentials([file(credentialsId: 'gcp-sa', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) { 
                 bat """
+                   set GOOGLE_APPLICATION_CREDENTIALS=%GOOGLE_APPLICATION_CREDENTIALS%
                    cd terraform
                    terraform init -backend-config="bucket=devops-poc-demo-tfstate" -backend-config="prefix=state"
                    terraform plan
                    terraform apply -auto-approve
                 """
+                }
             }
         }
 
         stage('Deploy to Cloud Run') {
             steps {
-                withCredentials([file(credentialsId: 'gcp-sa', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) { 
                 bat """
-                    set GOOGLE_APPLICATION_CREDENTIALS=%GOOGLE_APPLICATION_CREDENTIALS%
                     gcloud run deploy ${IMAGE_NAME} ^
                         --image ${FULL_IMAGE_PATH} ^
                         --region ${REGION} ^
