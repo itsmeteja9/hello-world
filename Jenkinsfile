@@ -132,7 +132,9 @@ pipeline {
 
         stage('Deploy to Cloud Run') {
             steps {
+                withCredentials([file(credentialsId: 'gcp-sa', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) { 
                 bat """
+                    set GOOGLE_APPLICATION_CREDENTIALS=%GOOGLE_APPLICATION_CREDENTIALS%
                     gcloud run deploy ${IMAGE_NAME} ^
                         --image ${FULL_IMAGE_PATH} ^
                         --region ${REGION} ^
@@ -140,6 +142,7 @@ pipeline {
                         --allow-unauthenticated ^
                         --project ${PROJECT_ID}
                 """
+                }
             }
         }
 
