@@ -125,7 +125,7 @@ pipeline {
                 bat """
                    set GOOGLE_APPLICATION_CREDENTIALS=%GOOGLE_APPLICATION_CREDENTIALS%
                    cd terraform
-                   terraform init -backend-config="bucket=devops-poc-demo-tfstate" -backend-config="prefix=state"
+                   terraform init -backend-config="bucket=devops-poc-demo-tfstate" -backend-config="prefix=devops-poc-demo/hello-world"
                    terraform plan
                    terraform apply -auto-approve
                 """
