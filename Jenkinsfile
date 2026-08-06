@@ -143,7 +143,6 @@ pipeline {
                         --allow-unauthenticated ^
                         --project ${PROJECT_ID}
                 """
-                }
             }
         }
 
