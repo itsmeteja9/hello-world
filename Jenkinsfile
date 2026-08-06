@@ -120,14 +120,15 @@ pipeline {
         }
 
         stage('Terraform Init/Plan/Apply') {
-            steps {
-                withCredentials([file(credentialsId: 'gcp-sa-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) { 
-                bat """
-                   set GOOGLE_APPLICATION_CREDENTIALS=%GOOGLE_APPLICATION_CREDENTIALS%
-                   cd terraform
-                   terraform init -backend-config="bucket=devops-poc-demo-tfstate" -backend-config="prefix=devops-poc-demo/hello-world"
-                   terraform plan
-                   terraform apply -auto-approve
+                agent { label 'linux' }   // IMPORTANT: run on a Linux agent
+                steps {
+                withCredentials([file(credentialsId: 'gcp-sa-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+                sh """
+                export GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
+                cd terraform
+                terraform init -backend-config="bucket=devops-poc-demo-tfstate" -backend-config="prefix=devops-poc-demo/hello-world"
+                terraform plan
+                terraform apply -auto-approve
                 """
                 }
             }
