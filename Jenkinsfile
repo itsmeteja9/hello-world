@@ -135,24 +135,18 @@ pipeline {
             }
         }
 
-        stage('Deploy to Cloud Run') {
-            steps {
-                bat """
-                    gcloud run deploy ${IMAGE_NAME} ^
-                        --image ${FULL_IMAGE_PATH} ^
-                        --region ${REGION} ^
-                        --platform managed ^
-                        --allow-unauthenticated ^
-                        --project ${PROJECT_ID}
-                """
-            }
-        }
-
         stage('Health Check') {
             steps {
-                bat """
-                    curl -I https://${IMAGE_NAME}-${REGION}.run.app
-                """
+                script {
+                    retry(3) {
+                        bat """
+                            gcloud run services describe hello-world ^
+                                --region ${REGION} ^
+                                --project ${PROJECT_ID} ^
+                                --format="value(status.url)"
+                        """
+                    }
+                }
             }
         }
     }
