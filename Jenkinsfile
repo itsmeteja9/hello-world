@@ -37,13 +37,38 @@ pipeline {
 
         stage('Semgrep Scan') {
             steps {
-                bat 'semgrep scan --config auto .'
+                script {
+                    // Check if semgrep exists on Windows PATH
+                    def semgrepExists = bat(
+                        script: 'where semgrep',
+                        returnStatus: true
+                    ) == 0
+
+                    if (semgrepExists) {
+                        echo "Semgrep found — running scan"
+                        bat 'semgrep scan --config auto .'
+                    } else {
+                        echo "Semgrep not installed — skipping Semgrep scan"
+                    }
+                }
             }
         }
 
         stage('Trivy FS Scan') {
             steps {
-                bat 'trivy fs .'
+                script {
+                    def trivyExists = bat(
+                        script: 'where trivy',
+                        returnStatus: true
+                    ) == 0
+
+                    if (trivyExists) {
+                        echo "Trivy found — running filesystem scan"
+                        bat 'trivy fs .'
+                    } else {
+                        echo "Trivy not installed — skipping Trivy scan"
+                    }
+                }
             }
         }
 
