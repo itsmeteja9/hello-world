@@ -120,7 +120,11 @@ pipeline {
         }
 
         stage('Terraform Init/Plan/Apply') {
-                agent any  
+                agent {
+                  docker {
+                   image 'hashicorp/terraform:latest'
+                         }
+                      }  
                 steps {
                 withCredentials([file(credentialsId: 'gcp-sa-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
                 sh """
