@@ -121,9 +121,12 @@ pipeline {
 
         stage('Terraform Init/Plan/Apply') {
             steps {
-                bat 'terraform init'
-                bat 'terraform plan'
-                bat 'terraform apply -auto-approve'
+                bat """
+                   cd terraform
+                   terraform init
+                   terraform plan
+                   terraform apply -auto-approve
+                """
             }
         }
 
