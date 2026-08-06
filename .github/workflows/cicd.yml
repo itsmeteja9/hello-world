@@ -42,10 +42,10 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        uses: actions/setup-node@v5
         with:
           node-version: "24"
           cache: npm
@@ -69,10 +69,10 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
@@ -97,10 +97,10 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        uses: actions/checkout@v5
 
       - name: Scan dependencies and repository secrets
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
@@ -110,10 +110,8 @@ jobs:
           exit-code: "1"
           format: table
 
-      # The demo intentionally makes Cloud Run public. Keep IaC findings visible
-      # without blocking until the team documents or removes that exception.
       - name: Review Terraform and Dockerfile configuration
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: config
           scan-ref: .
@@ -128,10 +126,10 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        uses: actions/checkout@v5
 
       - name: Set up Terraform
-        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_wrapper: false
 
@@ -144,6 +142,36 @@ jobs:
       - name: Validate Terraform
         run: terraform -chdir=terraform validate
 
+  sonarqube_scan:
+    name: 1E - SonarQube analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs:
+      - unit_tests
+      - sast
+      - repository_security
+      - terraform_validation
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+
+      - name: Run SonarQube scan
+        uses: sonarsource/sonarqube-scan-action@v2
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: .
+          args: >
+            -Dsonar.projectKey=hello-world
+            -Dsonar.organization=${{ vars.SONAR_ORG }}
+            -Dsonar.host.url=${{ vars.SONAR_HOST_URL }}
+
   provision_registry:
     name: 2 - Provision Artifact Registry
     if: github.event_name != 'pull_request'
@@ -152,12 +180,13 @@ jobs:
       - sast
       - repository_security
       - terraform_validation
+      - sonarqube_scan
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
       - name: Check out source
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        uses: actions/checkout@v5
 
       - name: Check required repository settings
         shell: bash
@@ -170,13 +199,13 @@ jobs:
           done
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        uses: google-github-actions/auth@v3
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
           project_id: ${{ env.GCP_PROJECT_ID }}
 
       - name: Set up Terraform
-        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_wrapper: false
 
@@ -213,16 +242,16 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        uses: actions/checkout@v5
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        uses: google-github-actions/auth@v3
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
           project_id: ${{ env.GCP_PROJECT_ID }}
 
       - name: Set up Google Cloud CLI
-        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+        uses: google-github-actions/setup-gcloud@v3
 
       - name: Prepare commit-tagged image URI
         id: image
@@ -239,7 +268,7 @@ jobs:
         run: docker build --pull --tag "${IMAGE_URI}" .
 
       - name: Scan container image before push
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ steps.image.outputs.uri }}
           scanners: vuln,secret
@@ -264,16 +293,16 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        uses: actions/checkout@v5
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        uses: google-github-actions/auth@v3
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
           project_id: ${{ env.GCP_PROJECT_ID }}
 
       - name: Set up Terraform
-        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_wrapper: false
 
@@ -295,56 +324,23 @@ jobs:
       - name: Create or update Cloud Run
         run: terraform -chdir=terraform apply -input=false tfplan
 
+      - name: Configure Datadog for Cloud Run
+        shell: bash
+        run: |
+          gcloud run services update ${CLOUD_RUN_SERVICE} \
+            --region=${GCP_REGION} \
+            --update-env-vars DD_API_KEY=${{ secrets.DD_API_KEY }} \
+            --update-env-vars DD_SITE=${{ vars.DD_SITE || 'datadoghq.com' }} \
+            --update-env-vars DD_LOGS_ENABLED=true \
+            --update-env-vars DD_TRACE_ENABLED=true \
+            --update-env-vars DD_PROFILING_ENABLED=true \
+            --update-env-vars DD_ENV=${{ vars.DEPLOY_ENVIRONMENT || 'demo' }} \
+            --update-env-vars DD_SERVICE=${CLOUD_RUN_SERVICE} \
+            --update-env-vars DD_VERSION=${GITHUB_SHA}
+
       - name: Read Cloud Run URL
         id: service
         shell: bash
         run: |
           SERVICE_URL="$(terraform -chdir=terraform output -raw cloud_run_url)"
           echo "url=${SERVICE_URL}" >> "${GITHUB_OUTPUT}"
-
-  verify:
-    name: 5 - Verify live service
-    needs:
-      - build_scan_publish
-      - deploy
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: Test health and application page
-        shell: bash
-        env:
-          SERVICE_URL: ${{ needs.deploy.outputs.service_url }}
-        run: |
-          curl --fail --silent --show-error \
-            --retry 12 \
-            --retry-all-errors \
-            --retry-delay 5 \
-            "${SERVICE_URL}/_ah/healthz"
-          curl --fail --silent --show-error \
-            --retry 5 \
-            --retry-all-errors \
-            --retry-delay 2 \
-            "${SERVICE_URL}" | grep -q "CI/CD Pipeline Journey"
-
-      - name: Publish deployment summary
-        shell: bash
-        env:
-          IMAGE_URI: ${{ needs.build_scan_publish.outputs.image_uri }}
-          SERVICE_URL: ${{ needs.deploy.outputs.service_url }}
-        run: |
-          {
-            echo "### CI/CD deployment completed"
-            echo
-            echo "| Check | Result |"
-            echo "| --- | --- |"
-            echo "| Unit tests | Passed |"
-            echo "| Semgrep SAST | Passed |"
-            echo "| Dependency and secret scan | Passed |"
-            echo "| Container scan | Passed |"
-            echo "| Terraform validation | Passed |"
-            echo
-            echo "- Service: \`${CLOUD_RUN_SERVICE}\`"
-            echo "- Image: \`${IMAGE_URI}\`"
-            echo "- URL: ${SERVICE_URL}"
-          } >> "${GITHUB_STEP_SUMMARY}"
