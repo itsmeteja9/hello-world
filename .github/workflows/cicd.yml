@@ -167,7 +167,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           projectBaseDir: .
-          args: >
+          args: |
             -Dsonar.projectKey=hello-world
             -Dsonar.organization=${{ vars.SONAR_ORG }}
             -Dsonar.host.url=${{ vars.SONAR_HOST_URL }}
