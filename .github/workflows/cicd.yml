@@ -8,7 +8,7 @@ on:
   push:
     branches:
       - main
-      - dev-demo      
+      - dev-demo
   workflow_dispatch:
 
 permissions:
@@ -342,8 +342,8 @@ jobs:
           DD_ENV: ${{ vars.DEPLOY_ENVIRONMENT || 'demo' }}
         run: |
           gcloud run services update ${CLOUD_RUN_SERVICE} \
-          --region=${GCP_REGION} \
-          --set-env-vars=DD_API_KEY=${DD_API_KEY},DD_SITE=${DD_SITE},DD_LOGS_ENABLED=true,DD_TRACE_ENABLED=true,DD_PROFILING_ENABLED=true,DD_ENV=${DD_ENV},DD_SERVICE=${CLOUD_RUN_SERVICE},DD_VERSION=${GITHUB_SHA}
+            --region=${GCP_REGION} \
+            --set-env-vars="DD_API_KEY=${DD_API_KEY},DD_SITE=${DD_SITE},DD_LOGS_ENABLED=true,DD_TRACE_ENABLED=true,DD_PROFILING_ENABLED=true,DD_ENV=${DD_ENV},DD_SERVICE=${CLOUD_RUN_SERVICE},DD_VERSION=${GITHUB_SHA}"
 
       - name: Read Cloud Run URL
         id: service
