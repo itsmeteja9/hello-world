@@ -1,4 +1,4 @@
-const tracer = require('dd-trace').init();
+//const tracer = require('dd-trace').init();
 
 const { createApp } = require('./app');
 
