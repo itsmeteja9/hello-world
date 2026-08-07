@@ -58,7 +58,6 @@ jobs:
           node --check app.js
           node --check server.js
           node --check public/client.js
-
       - name: Run tests with coverage
         run: npm run test:coverage
 
@@ -155,25 +154,28 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v5
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v5
         with:
-          node-version: "24"
+          fetch-depth: 0
 
       - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
-    
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@v2
+
+      - name: Download and run SonarScanner
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-         args: -Dsonar.projectKey=harnesspoc_hello-world -Dsonar.organization=${{ vars.SONAR_ORG }} -Dsonar.host.url=${{ vars.SONAR_HOST_URL }}
+        run: |
+          export SONAR_SCANNER_VERSION=6.1.0.4477
+          mkdir -p ~/.sonar
+          curl -sSLo ~/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SONAR_SCANNER_VERSION}-linux-x64.zip
+          unzip -o ~/.sonar/sonar-scanner.zip -d ~/.sonar/
+          ~/.sonar/sonar-scanner-${SONAR_SCANNER_VERSION}-linux-x64/bin/sonar-scanner \
+            -Dsonar.projectKey=harnesspoc_hello-world \
+            -Dsonar.organization=${{ vars.SONAR_ORG }} \
+            -Dsonar.host.url=${{ vars.SONAR_HOST_URL }} \
+            -Dsonar.login=$SONAR_TOKEN
 
   provision_registry:
     name: 2 - Provision Artifact Registry
