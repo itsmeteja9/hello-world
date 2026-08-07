@@ -8,7 +8,7 @@ on:
   push:
     branches:
       - main
-      - dev-demo      
+      - dev-demo
   workflow_dispatch:
 
 permissions:
@@ -58,6 +58,7 @@ jobs:
           node --check app.js
           node --check server.js
           node --check public/client.js
+
       - name: Run tests with coverage
         run: npm run test:coverage
 
@@ -171,11 +172,17 @@ jobs:
           mkdir -p ~/.sonar
           curl -sSLo ~/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SONAR_SCANNER_VERSION}-linux-x64.zip
           unzip -o ~/.sonar/sonar-scanner.zip -d ~/.sonar/
+
+          BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+
           ~/.sonar/sonar-scanner-${SONAR_SCANNER_VERSION}-linux-x64/bin/sonar-scanner \
-            -Dsonar.projectKey=harnesspoc_hello-world \
+            -Dsonar.projectKey=harnesspoc_hello \
+            -Dsonar.projectName=hello-world \
             -Dsonar.organization=${{ vars.SONAR_ORG }} \
+            -Dsonar.sources=. \
             -Dsonar.host.url=${{ vars.SONAR_HOST_URL }} \
-            -Dsonar.login=$SONAR_TOKEN
+            -Dsonar.login=$SONAR_TOKEN \
+            -Dsonar.branch.name="${BRANCH_NAME}"
 
   provision_registry:
     name: 2 - Provision Artifact Registry
@@ -330,18 +337,14 @@ jobs:
         run: terraform -chdir=terraform apply -input=false tfplan
 
       - name: Configure Datadog for Cloud Run
-        shell: bash
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_SITE: ${{ vars.DD_SITE || 'datadoghq.com' }}
+          DD_ENV: ${{ vars.DEPLOY_ENVIRONMENT || 'demo' }}
         run: |
           gcloud run services update ${CLOUD_RUN_SERVICE} \
             --region=${GCP_REGION} \
-            --update-env-vars DD_API_KEY=${{ secrets.DD_API_KEY }} \
-            --update-env-vars DD_SITE=${{ vars.DD_SITE || 'datadoghq.com' }} \
-            --update-env-vars DD_LOGS_ENABLED=true \
-            --update-env-vars DD_TRACE_ENABLED=true \
-            --update-env-vars DD_PROFILING_ENABLED=true \
-            --update-env-vars DD_ENV=${{ vars.DEPLOY_ENVIRONMENT || 'demo' }} \
-            --update-env-vars DD_SERVICE=${CLOUD_RUN_SERVICE} \
-            --update-env-vars DD_VERSION=${GITHUB_SHA}
+            --set-env-vars="DD_API_KEY=${DD_API_KEY},DD_SITE=${DD_SITE},DD_LOGS_ENABLED=true,DD_TRACE_ENABLED=true,DD_PROFILING_ENABLED=true,DD_ENV=${DD_ENV},DD_SERVICE=${CLOUD_RUN_SERVICE},DD_VERSION=${GITHUB_SHA}"
 
       - name: Read Cloud Run URL
         id: service
