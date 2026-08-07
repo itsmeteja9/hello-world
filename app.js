@@ -6,12 +6,15 @@ function createApp() {
 
   app.disable('x-powered-by');
 
-  // Health check BEFORE static middleware
   app.get('/healthz', (_req, res) => {
     res.status(200).json({
       status: 'ok',
       service: 'cicd-enterprise-blueprint',
     });
+  });
+
+  app.get('/test', (_req, res) => {
+    res.json({ message: 'test works' });
   });
 
   app.use(
@@ -20,6 +23,11 @@ function createApp() {
       maxAge: process.env.NODE_ENV === 'production' ? '1h' : 0,
     }),
   );
+
+  // Catch-all for debugging
+  app.use((_req, res) => {
+    res.status(404).json({ error: 'Route not found' });
+  });
 
   return app;
 }
