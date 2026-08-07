@@ -178,7 +178,7 @@ jobs:
           ~/.sonar/sonar-scanner-${SONAR_SCANNER_VERSION}-linux-x64/bin/sonar-scanner \
             -Dsonar.projectKey=harnesspoc_hello \
             -Dsonar.projectName=hello-world \
-            -Dsonar.organization=${{ vars.SONAR_ORG }} \
+            -Dsonar.organization=harnesspoc \
             -Dsonar.sources=. \
             -Dsonar.host.url=${{ vars.SONAR_HOST_URL }} \
             -Dsonar.login=$SONAR_TOKEN \
