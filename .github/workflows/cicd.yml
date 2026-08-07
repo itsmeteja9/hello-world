@@ -1,0 +1,351 @@
+name: CI/CD - Test, secure and deploy to Cloud Run
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev-demo
+  push:
+    branches:
+      - main
+      - dev-demo      
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloud-run-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  GCP_REGION: ${{ vars.GCP_REGION || 'us-central1' }}
+  GAR_REPOSITORY: ${{ vars.GAR_REPOSITORY || 'hello-world-images' }}
+  CLOUD_RUN_SERVICE: ${{ vars.CLOUD_RUN_SERVICE || 'hello-world' }}
+  TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+  TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
+  TF_VAR_region: ${{ vars.GCP_REGION || 'us-central1' }}
+  TF_VAR_repository_id: ${{ vars.GAR_REPOSITORY || 'hello-world-images' }}
+  TF_VAR_service_name: ${{ vars.CLOUD_RUN_SERVICE || 'hello-world' }}
+  TF_VAR_environment: ${{ vars.DEPLOY_ENVIRONMENT || 'demo' }}
+  TF_VAR_allow_unauthenticated: ${{ vars.ALLOW_UNAUTHENTICATED || 'true' }}
+
+jobs:
+  unit_tests:
+    name: 1A - Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check app.js
+          node --check server.js
+          node --check public/client.js
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+  sast:
+    name: 1B - Open-source SAST
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-security.txt
+
+      - name: Install Semgrep Community Edition
+        run: python -m pip install --disable-pip-version-check -r requirements-security.txt
+
+      - name: Run Semgrep SAST
+        run: |
+          semgrep scan \
+            --config p/javascript \
+            --config p/nodejs \
+            --error \
+            --metrics=off \
+            .
+
+  repository_security:
+    name: 1C - Dependencies, secrets and IaC
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Scan dependencies and repository secrets
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          format: table
+
+      - name: Review Terraform and Dockerfile configuration
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: config
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          exit-code: "0"
+          format: table
+
+  terraform_validation:
+    name: 1D - Terraform validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Check Terraform formatting
+        run: terraform -chdir=terraform fmt -check -recursive
+
+      - name: Initialize Terraform without remote state
+        run: terraform -chdir=terraform init -backend=false -input=false
+
+      - name: Validate Terraform
+        run: terraform -chdir=terraform validate
+
+  sonarqube_scan:
+    name: 1E - SonarQube analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs:
+      - unit_tests
+      - sast
+      - repository_security
+      - terraform_validation
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Download and run SonarScanner
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          export SONAR_SCANNER_VERSION=6.1.0.4477
+          mkdir -p ~/.sonar
+          curl -sSLo ~/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SONAR_SCANNER_VERSION}-linux-x64.zip
+          unzip -o ~/.sonar/sonar-scanner.zip -d ~/.sonar/
+          ~/.sonar/sonar-scanner-${SONAR_SCANNER_VERSION}-linux-x64/bin/sonar-scanner \
+            -Dsonar.projectKey=harnesspoc_hello-world \
+            -Dsonar.organization=${{ vars.SONAR_ORG }} \
+            -Dsonar.host.url=${{ vars.SONAR_HOST_URL }} \
+            -Dsonar.login=$SONAR_TOKEN
+
+  provision_registry:
+    name: 2 - Provision Artifact Registry
+    if: github.event_name != 'pull_request'
+    needs:
+      - unit_tests
+      - sast
+      - repository_security
+      - terraform_validation
+      - sonarqube_scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Check required repository settings
+        shell: bash
+        run: |
+          for name in GCP_PROJECT_ID TF_STATE_BUCKET; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Missing GitHub Actions repository variable: ${name}"
+              exit 1
+            fi
+          done
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Prepare commit-tagged image URI
+        shell: bash
+        run: |
+          IMAGE_URI="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GAR_REPOSITORY}/${CLOUD_RUN_SERVICE}:${GITHUB_SHA}"
+          echo "TF_VAR_image=${IMAGE_URI}" >> "${GITHUB_ENV}"
+          echo "Image to create: ${IMAGE_URI}"
+
+      - name: Initialize Terraform
+        shell: bash
+        run: |
+          terraform -chdir=terraform init \
+            -input=false \
+            -backend-config="bucket=${TF_STATE_BUCKET}" \
+            -backend-config="prefix=${GCP_PROJECT_ID}/${CLOUD_RUN_SERVICE}"
+
+      - name: Create Artifact Registry repository
+        run: |
+          terraform -chdir=terraform apply \
+            -input=false \
+            -auto-approve \
+            -target=google_project_service.required \
+            -target=google_artifact_registry_repository.app
+
+  build_scan_publish:
+    name: 3 - Build, scan and publish image
+    needs: provision_registry
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      image_uri: ${{ steps.image.outputs.uri }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Prepare commit-tagged image URI
+        id: image
+        shell: bash
+        run: |
+          IMAGE_URI="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GAR_REPOSITORY}/${CLOUD_RUN_SERVICE}:${GITHUB_SHA}"
+          echo "IMAGE_URI=${IMAGE_URI}" >> "${GITHUB_ENV}"
+          echo "uri=${IMAGE_URI}" >> "${GITHUB_OUTPUT}"
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
+
+      - name: Build container image
+        run: docker build --pull --tag "${IMAGE_URI}" .
+
+      - name: Scan container image before push
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ steps.image.outputs.uri }}
+          scanners: vuln,secret
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          format: table
+
+      - name: Push approved container image
+        run: docker push "${IMAGE_URI}"
+
+  deploy:
+    name: 4 - Deploy to Cloud Run
+    needs: build_scan_publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: demo
+      url: ${{ steps.service.outputs.url }}
+    outputs:
+      service_url: ${{ steps.service.outputs.url }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Initialize Terraform
+        shell: bash
+        run: |
+          terraform -chdir=terraform init \
+            -input=false \
+            -backend-config="bucket=${TF_STATE_BUCKET}" \
+            -backend-config="prefix=${GCP_PROJECT_ID}/${CLOUD_RUN_SERVICE}"
+
+      - name: Plan Cloud Run deployment
+        run: |
+          terraform -chdir=terraform plan \
+            -input=false \
+            -var="image=${{ needs.build_scan_publish.outputs.image_uri }}" \
+            -out=tfplan
+
+      - name: Create or update Cloud Run
+        run: terraform -chdir=terraform apply -input=false tfplan
+
+      - name: Configure Datadog for Cloud Run
+        shell: bash
+        run: |
+          gcloud run services update ${CLOUD_RUN_SERVICE} \
+            --region=${GCP_REGION} \
+            --update-env-vars DD_API_KEY=${{ secrets.DD_API_KEY }} \
+            --update-env-vars DD_SITE=${{ vars.DD_SITE || 'datadoghq.com' }} \
+            --update-env-vars DD_LOGS_ENABLED=true \
+            --update-env-vars DD_TRACE_ENABLED=true \
+            --update-env-vars DD_PROFILING_ENABLED=true \
+            --update-env-vars DD_ENV=${{ vars.DEPLOY_ENVIRONMENT || 'demo' }} \
+            --update-env-vars DD_SERVICE=${CLOUD_RUN_SERVICE} \
+            --update-env-vars DD_VERSION=${GITHUB_SHA}
+
+      - name: Read Cloud Run URL
+        id: service
+        shell: bash
+        run: |
+          SERVICE_URL="$(terraform -chdir=terraform output -raw cloud_run_url)"
+          echo "url=${SERVICE_URL}" >> "${GITHUB_OUTPUT}"

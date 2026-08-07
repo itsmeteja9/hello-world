@@ -1,0 +1,15 @@
+project_id    = "your-gcp-project-id"
+region        = "us-central1"
+repository_id = "hello-world-images"
+service_name  = "hello-world"
+
+# Do not set image here. GitHub Actions supplies the full Artifact Registry URI
+# with the current GITHUB_SHA at plan time.
+
+environment           = "demo"
+allow_unauthenticated = true
+
+labels = {
+  cost_center = "demo"
+  owner       = "platform-team"
+}

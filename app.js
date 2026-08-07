@@ -1,10 +1,26 @@
 const express = require('express');
-const app = express();
+const path = require('path');
 
-app.get('/', (req, res) => {
-  res.send('Hello from Harness CI/CD Demo');
-});
+function createApp() {
+  const app = express();
 
-app.listen(3000, () => {
-  console.log(`Application running on port 3000`);
-});
+  app.disable('x-powered-by');
+
+  app.use(
+    express.static(path.join(__dirname, 'public'), {
+      etag: true,
+      maxAge: process.env.NODE_ENV === 'production' ? '1h' : 0,
+    }),
+  );
+
+  app.get('/healthz', (_req, res) => {
+    res.status(200).json({
+      status: 'ok',
+      service: 'cicd-enterprise-blueprint',
+    });
+  });
+
+  return app;
+}
+
+module.exports = { createApp };

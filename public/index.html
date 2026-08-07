@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f9f8f4">
+    <meta
+      name="description"
+      content="Interactive CI/CD blueprint showing how GitHub Actions, Terraform, Artifact Registry, and Cloud Run deliver an application."
+    >
+    <title>CI/CD Pipeline Journey | Cloud Run Demo</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/client.js" defer></script>
+  </head>
+  <body>
+    <svg class="svg-library" aria-hidden="true">
+      <symbol id="icon-code" viewBox="0 0 48 48">
+        <path d="m17 13-11 11 11 11M31 13l11 11-11 11M27 8l-6 32"/>
+      </symbol>
+      <symbol id="icon-terraform" viewBox="0 0 48 48">
+        <path d="m24 5 9 5v10l-9 5-9-5V10l9-5ZM15 21l9 5v11l-9 5-9-5V26l9-5Zm18 0 9 5v11l-9 5-9-5V26l9-5Z"/>
+      </symbol>
+      <symbol id="icon-cube" viewBox="0 0 48 48">
+        <path d="m24 4 18 10v20L24 44 6 34V14L24 4Zm0 0v20m18-10L24 24 6 14m18 10v20"/>
+      </symbol>
+      <symbol id="icon-registry" viewBox="0 0 48 48">
+        <path d="m24 4 17 10v20L24 44 7 34V14L24 4ZM15 16h18v6H15v-6Zm0 10h18v6H15v-6Zm0 10h12"/>
+      </symbol>
+      <symbol id="icon-cloud" viewBox="0 0 48 48">
+        <path d="M15 37h20a9 9 0 0 0 1-18 13 13 0 0 0-24-3A10.5 10.5 0 0 0 15 37Zm13-7 5 5 5-5m-5 5V24"/>
+      </symbol>
+      <symbol id="icon-shield" viewBox="0 0 48 48">
+        <path d="M24 4 40 10v12c0 10-6.5 18-16 22C14.5 40 8 32 8 22V10l16-6Zm-8 20 5 5 11-12"/>
+      </symbol>
+    </svg>
+
+    <main>
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-badge">EEP Demo</span>
+          <span class="brand-title">CI/CD Pipeline Journey</span>
+        </div>
+        <div class="live-pill">
+          <span class="live-dot"></span>
+          Cloud Run live
+        </div>
+      </header>
+
+      <section class="hero blueprint-grid">
+        <div class="coordinate coordinate-top">X 960<br>Y 240</div>
+        <div class="coordinate coordinate-left">GRID 12</div>
+
+        <div class="hero-copy">
+          <p class="kicker">GITHUB ACTIONS × GOOGLE CLOUD</p>
+          <h1>From commit to Cloud Run — clearly.</h1>
+          <p class="hero-description">
+            See how each change is tested and security-scanned before Terraform,
+            Artifact Registry, and Cloud Run deliver the approved application.
+          </p>
+          <div class="hero-actions">
+            <button class="button button-primary" id="run-pipeline" type="button">
+              <span class="play-mark" aria-hidden="true">▶</span>
+              <span class="button-label">Run pipeline demo</span>
+            </button>
+            <button class="button button-secondary" id="explore-stages" type="button">
+              Explore stages <span aria-hidden="true">→</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="hero-annotation" aria-hidden="true">
+          <span>ALIGN</span>
+          <span>BASELINE</span>
+        </div>
+      </section>
+
+      <section class="pipeline-shell" id="pipeline" aria-label="CI/CD pipeline stages">
+        <div class="pipeline-track" aria-hidden="true">
+          <div class="pipeline-progress" id="pipeline-progress"></div>
+        </div>
+        <div class="stage-grid" id="stage-grid"></div>
+      </section>
+
+      <section class="stage-summary" aria-live="polite">
+        <span class="summary-number" id="summary-number">01</span>
+        <div>
+          <p id="summary-eyebrow">SOURCE EVENT</p>
+          <h2 id="summary-name">Source Change</h2>
+          <span id="summary-text">A pull request checks the change; a merge to main starts delivery.</span>
+        </div>
+      </section>
+
+      <section class="metrics" aria-label="Pipeline summary">
+        <article>
+          <span class="metric-icon" aria-hidden="true">⌘</span>
+          <div>
+            <strong>8 visible jobs</strong>
+            <small>clear ownership and status</small>
+          </div>
+        </article>
+        <article>
+          <span class="metric-icon" aria-hidden="true">◷</span>
+          <div>
+            <strong>4 parallel gates</strong>
+            <small>fast feedback before build</small>
+          </div>
+        </article>
+        <article>
+          <span class="metric-icon check-icon" aria-hidden="true">✓</span>
+          <div>
+            <strong>1 deployment gate</strong>
+            <small>optional human approval</small>
+          </div>
+        </article>
+      </section>
+
+      <section class="explain-section blueprint-grid" id="stage-details">
+        <div class="section-heading">
+          <div>
+            <p class="kicker">THE HANDOFFS, EXPLAINED</p>
+            <h2>One pipeline. Six clear stages.</h2>
+            <p>
+              Use the guided explanation for stakeholders or switch to the
+              delivery detail engineers expect.
+            </p>
+          </div>
+          <div class="view-toggle" role="group" aria-label="Explanation detail">
+            <button class="is-active" id="guided-view" type="button" aria-pressed="true">
+              Guided view
+            </button>
+            <button id="technical-view" type="button" aria-pressed="false">
+              Technical view
+            </button>
+          </div>
+        </div>
+
+        <div class="responsibility-grid" id="responsibility-grid"></div>
+
+        <aside class="sequence-note">
+          <span class="sequence-mark">!</span>
+          <div>
+            <strong>Why this order matters</strong>
+            <p>
+              Tests and security checks must pass before GCP credentials are used.
+              Artifact Registry is created before the push, and Cloud Run receives
+              only the exact commit-tagged image that passed scanning.
+            </p>
+          </div>
+        </aside>
+      </section>
+
+      <section class="execution-section">
+        <div class="section-heading compact-heading">
+          <div>
+            <p class="kicker">LIVE EXECUTION VIEW</p>
+            <h2>Follow the run without reading raw YAML.</h2>
+          </div>
+          <button class="button button-primary button-small" id="run-again" type="button">
+            Start demo
+          </button>
+        </div>
+
+        <div class="execution-grid">
+          <article class="activity-panel">
+            <div class="panel-bar">
+              <div aria-hidden="true">
+                <span class="panel-dot red"></span>
+                <span class="panel-dot yellow"></span>
+                <span class="panel-dot green"></span>
+              </div>
+              <span>github-actions / deploy.yml</span>
+              <span class="run-state" id="run-state">READY</span>
+            </div>
+            <div class="activity-log" id="activity-log" aria-live="polite"></div>
+          </article>
+
+          <article class="service-panel" id="service-panel">
+            <div class="service-header">
+              <div class="service-cloud">
+                <svg aria-hidden="true"><use href="#icon-cloud"></use></svg>
+              </div>
+              <div>
+                <span>DEPLOYMENT OUTPUT</span>
+                <h3>Hello World service</h3>
+              </div>
+              <span class="service-status" id="service-status">LIVE</span>
+            </div>
+
+            <div class="service-preview">
+              <span class="hello-orbit orbit-one"></span>
+              <span class="hello-orbit orbit-two"></span>
+              <p>HELLO FROM CLOUD RUN</p>
+              <strong>It shipped. <span>✓</span></strong>
+              <small id="revision-copy">
+                This page is the application currently served by Cloud Run.
+              </small>
+            </div>
+
+            <div class="url-output">
+              <span>Live service URL</span>
+              <code id="service-url">Loading current URL…</code>
+              <span class="url-check">✓</span>
+            </div>
+          </article>
+        </div>
+
+        <p class="simulation-note">
+          The animation is an explanatory walkthrough. This page itself was
+          built, pushed, and deployed by the GitHub Actions workflow.
+        </p>
+      </section>
+
+      <footer>
+        <div>
+          <span class="brand-badge">EEP Demo</span>
+          <p>Tests + Security → Terraform → Build + Scan → GAR → Cloud Run → Verify</p>
+        </div>
+        <p>Interactive architecture walkthrough served from Cloud Run.</p>
+      </footer>
+    </main>
+
+    <noscript>
+      <div class="noscript">Enable JavaScript to run the interactive pipeline walkthrough.</div>
+    </noscript>
+  </body>
+</html>

@@ -1,10 +1,15 @@
 {
   "name": "hello-world",
   "version": "1.0.0",
-  "description": "Simple Express Hello World app",
-  "main": "app.js",
+  "description": "Express demo deployed to Cloud Run through GitHub Actions",
+  "main": "server.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node server.js",
+    "test": "node --test",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=app.js --test-coverage-lines=90"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "dependencies": {
     "express": "^4.19.2"
