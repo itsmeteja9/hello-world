@@ -6,19 +6,20 @@ function createApp() {
 
   app.disable('x-powered-by');
 
-  app.use(
-    express.static(path.join(__dirname, 'public'), {
-      etag: true,
-      maxAge: process.env.NODE_ENV === 'production' ? '1h' : 0,
-    }),
-  );
-
+  // Health check BEFORE static middleware
   app.get('/healthz', (_req, res) => {
     res.status(200).json({
       status: 'ok',
       service: 'cicd-enterprise-blueprint',
     });
   });
+
+  app.use(
+    express.static(path.join(__dirname, 'public'), {
+      etag: true,
+      maxAge: process.env.NODE_ENV === 'production' ? '1h' : 0,
+    }),
+  );
 
   return app;
 }
