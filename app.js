@@ -6,7 +6,7 @@ function createApp() {
 
   app.disable('x-powered-by');
 
-  app.get('/healthz', (_req, res) => {
+  app.get('/health-check', (_req, res) => {
     res.status(200).json({
       status: 'ok',
       service: 'cicd-enterprise-blueprint',
