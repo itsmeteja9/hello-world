@@ -330,19 +330,15 @@ jobs:
         run: terraform -chdir=terraform apply -input=false tfplan
 
       - name: Configure Datadog for Cloud Run
-        shell: bash
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_SITE: ${{ vars.DD_SITE || 'datadoghq.com' }}
+          DD_ENV: ${{ vars.DEPLOY_ENVIRONMENT || 'demo' }}
         run: |
           gcloud run services update ${CLOUD_RUN_SERVICE} \
-            --region=${GCP_REGION} \
-            --update-env-vars DD_API_KEY=${{ secrets.DD_API_KEY }} \
-            --update-env-vars DD_SITE=${{ vars.DD_SITE || 'datadoghq.com' }} \
-            --update-env-vars DD_LOGS_ENABLED=true \
-            --update-env-vars DD_TRACE_ENABLED=true \
-            --update-env-vars DD_PROFILING_ENABLED=true \
-            --update-env-vars DD_ENV=${{ vars.DEPLOY_ENVIRONMENT || 'demo' }} \
-            --update-env-vars DD_SERVICE=${CLOUD_RUN_SERVICE} \
-            --update-env-vars DD_VERSION=${GITHUB_SHA}
-
+          --region=${GCP_REGION} \
+          --set-env-vars=DD_API_KEY=${DD_API_KEY},DD_SITE=${DD_SITE},DD_LOGS_ENABLED=true,DD_TRACE_ENABLED=true,DD_PROFILING_ENABLED=true,DD_ENV=${DD_ENV},DD_SERVICE=${CLOUD_RUN_SERVICE},DD_VERSION=${GITHUB_SHA}
+     
       - name: Read Cloud Run URL
         id: service
         shell: bash
