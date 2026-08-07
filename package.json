@@ -7,7 +7,7 @@
     "start": "node server.js",
     "test": "node --test",
     "test": "node --test",
-    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=*.js --coverage-reporter=lcov --coverage-reporter=text"
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=*.js"
   },
   "engines": {
     "node": ">=20"
