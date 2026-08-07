@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "test": "node --test",
-    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=app.js --test-coverage-lines=90"
+    "test": "node --test",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=*.js --coverage-reporter=lcov --coverage-reporter=text"
   },
   "engines": {
     "node": ">=20"
