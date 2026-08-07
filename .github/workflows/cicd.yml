@@ -58,6 +58,7 @@ jobs:
           node --check app.js
           node --check server.js
           node --check public/client.js
+
       - name: Run tests with coverage
         run: npm run test:coverage
 
@@ -171,11 +172,16 @@ jobs:
           mkdir -p ~/.sonar
           curl -sSLo ~/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SONAR_SCANNER_VERSION}-linux-x64.zip
           unzip -o ~/.sonar/sonar-scanner.zip -d ~/.sonar/
+
+          BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+
           ~/.sonar/sonar-scanner-${SONAR_SCANNER_VERSION}-linux-x64/bin/sonar-scanner \
             -Dsonar.projectKey=harnesspoc_hello \
-            -Dsonar.organization=${{ vars.SONAR_ORG }} \
+            -Dsonar.projectName=harnesspoc_hello \
+            -Dsonar.sources=. \
             -Dsonar.host.url=${{ vars.SONAR_HOST_URL }} \
-            -Dsonar.login=$SONAR_TOKEN
+            -Dsonar.login=$SONAR_TOKEN \
+            -Dsonar.branch.name="${BRANCH_NAME}"
 
   provision_registry:
     name: 2 - Provision Artifact Registry
@@ -338,7 +344,7 @@ jobs:
           gcloud run services update ${CLOUD_RUN_SERVICE} \
           --region=${GCP_REGION} \
           --set-env-vars=DD_API_KEY=${DD_API_KEY},DD_SITE=${DD_SITE},DD_LOGS_ENABLED=true,DD_TRACE_ENABLED=true,DD_PROFILING_ENABLED=true,DD_ENV=${DD_ENV},DD_SERVICE=${CLOUD_RUN_SERVICE},DD_VERSION=${GITHUB_SHA}
-     
+
       - name: Read Cloud Run URL
         id: service
         shell: bash
